@@ -1,46 +1,60 @@
 #pragma once
 
 #include <iostream>
-#include <string>
 #include <fstream>
+#include <string>
 #include <vector>
 #include <stdexcept>
-#include <sstream>
+#include <filesystem>
 
 namespace srs {
-    enum f_mode : u_int8_t {
-        nomal = 0,
-        binary = 1,
-        empty = 100
+    class o_file {
+        private:
+            std::ofstream ofs;
+            std::string path;
+
+        public:
+            o_file(const std::string& p, std::ios::openmode mode = std::ios::out | std::ios::app);
+            ~o_file();
+
+            inline void write(const std::string& data);
+            inline void write_binary(const std::vector<char>& data);
+            inline bool is_open() const;
+            inline void flush();
+            inline std::string get_path() const;
     };
 
-    class file {
-    private:
-        std::ofstream __ofs;
-        const char* __f_name;
-        srs::f_mode __f_mode;
-        enum mode {
-            nomal = 0,
-            binary = 1,
-            empty = 100
-        };
-    public:
-        file();
-        file(const char* name, srs::f_mode mode = srs::f_mode::nomal);
-        file(const srs::file& me);
-        ~file();
+    class i_file {
+        private:
+            std::ifstream ifs;
+            std::string path;
 
-        srs::file& operator()(const char* name, srs::f_mode mode = srs::f_mode::empty);
-        srs::file& operator()(const srs::file& file);
+        public:
+            i_file(const std::string& p, std::ios::openmode mode = std::ios::in);
+            ~i_file();
 
-        template <typename T>
-        srs::file& operator<(const T data);
+            inline std::string load();
+            inline std::vector<char> load_binary();
+            inline bool is_open() const;
+            inline std::string get_path() const;
+            inline void seek(std::streampos pos);
+    };
 
-        template <typename T>
-        srs::file& operator<<(const T data);
-        
-        std::string load(const std::string& file) const;
-        static std::string load(const std::string& file, const srs::f_mode& f_mode);
-        srs::file& close();
+    struct file {
+        file() = default;
+        ~file() = default;
+
+        static inline bool write(const std::string& path, const std::string& data, std::ios::openmode mode = std::ios::app);
+        static inline std::string load(const std::string& path, std::ios::openmode mode = std::ios::in);
+        static inline bool write_binary(const std::string& path, const std::vector<char>& data, std::ios::openmode mode = std::ios::out);
+        static inline std::vector<char> load_binary(const std::string& path, std::ios::openmode mode = std::ios::in);
+        static inline std::uintmax_t size(const std::string& path);
+        static inline bool exists(const std::string& path);
+        static inline std::string filename(const std::string& path);
+        static inline std::string directory(const std::string& path);
+
+        static inline void open_ofs(std::ofstream& ofs, const std::string& path, std::ios::openmode mode);
+        static inline void open_ifs(std::ifstream& ifs, const std::string& path, std::ios::openmode mode);
     };
 }
+

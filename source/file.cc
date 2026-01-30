@@ -1,102 +1,149 @@
-#include "../include/file.hh"
+#include "file.hh"
+#include <sstream>
 
-srs::file::file() : __f_name(""), __f_mode(srs::f_mode::nomal) {}
-srs::file::file(const char* name, srs::f_mode mode) : __f_name(name), __f_mode(mode) {}
-srs::file::file(const srs::file& me) : __f_name(me.__f_name), __f_mode(me.__f_mode) {}
-srs::file::~file() {}
-
-srs::file& srs::file::operator()(const char* name, srs::f_mode mode) {
-    __f_name = name;
-    if(mode != srs::f_mode::empty) {
-        __f_mode = mode;
-    } return *this;
-}
-
-srs::file& srs::file::operator()(const srs::file& file) {
-    __f_name = file.__f_name;
-    __f_mode = file.__f_mode;
-    return *this;
-}
-
-template <typename T>
-srs::file& srs::file::operator<(const T data) {
-    if (__f_mode == srs::f_mode::nomal) {
-        __ofs.open(__f_name, std::ios::out | std::ios::trunc);
-        if (!__ofs.is_open()) {
-            throw std::runtime_error("Failed to open file: " + std::string(__f_name));
-        }
-        __ofs << data;
-        __ofs.close();
-    } else if (__f_mode == srs::f_mode::binary) {
-        __ofs.open(__f_name, std::ios::binary | std::ios::out | std::ios::trunc);
-        if (!__ofs.is_open()) {
-            throw std::runtime_error("Failed to open file: " + std::string(__f_name));
-        }
-        __ofs.write(reinterpret_cast<const char*>(&data), sizeof(T));
-        __ofs.close();
+srs::o_file::o_file(const std::string& p, std::ios::openmode mode) : path(p) {
+    ofs.open(path, mode);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("o_file can't open " + path);
     }
-    return *this;
 }
 
-template <typename T>
-srs::file& srs::file::operator<<(const T data) {
-    if (__f_mode == srs::f_mode::nomal) {
-        __ofs.open(__f_name, std::ios::app);
-        if (!__ofs.is_open()) {
-            throw std::runtime_error("Failed to open file: " + std::string(__f_name));
-        }
- 
-        __ofs << data;
-        __ofs.close();
-    } else if (__f_mode == srs::f_mode::binary) {
-        __ofs.open(__f_name, std::ios::binary | std::ios::app);
-        if (!__ofs.is_open()) {
-            throw std::runtime_error("Failed to open file: " + std::string(__f_name));
-        }
-        __ofs.write(reinterpret_cast<const char*>(&data), sizeof(T));
-        __ofs.close();
+srs::o_file::~o_file() {
+    if (ofs.is_open()) {
+        ofs.close();
     }
-    return *this;
 }
 
-inline std::string srs::file::load(const std::string& file) const {
-    return this->load(file, __f_mode);
+inline void srs::o_file::write(const std::string& data) {
+    ofs << data;
 }
 
-std::string srs::file::load(const std::string& file, const srs::f_mode& f_mode) {
-    std::ios_base::openmode mode = std::ios::in;
+inline void srs::o_file::write_binary(const std::vector<char>& data) {
+    ofs.write(data.data(), data.size());
+}
 
-    if (f_mode == srs::f_mode::binary) {
-        mode |= std::ios::binary;
-    } else if (f_mode == srs::f_mode::empty) {
-        throw std::runtime_error("srs::file::load f_mode is empty");
-    } else if (f_mode != srs::f_mode::nomal) {
-        throw std::runtime_error("srs::file::load unknown f_mode. f_mode = " + std::to_string(static_cast<u_int8_t>(f_mode)));
-    }
+inline bool srs::o_file::is_open() const {
+    return ofs.is_open();
+}
 
-    std::ifstream ifs(file, mode);
+inline void srs::o_file::flush() {
+    ofs.flush();
+}
+
+inline std::string srs::o_file::get_path() const {
+    return path;
+}
+
+// ------------------------
+
+srs::i_file::i_file(const std::string& p, std::ios::openmode mode)
+    : path(p)
+{
+    ifs.open(path, mode);
     if (!ifs.is_open()) {
-        throw std::runtime_error("Failed to open file: " + file);
+        throw std::runtime_error("i_file can't open " + path);
     }
-
-    return std::string((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 }
 
-
-srs::file& srs::file::close() {
-    if(__ofs.is_open()) {
-        __ofs.close();
-    } return *this;
+inline srs::i_file::~i_file() {
+    if (ifs.is_open()) {
+        ifs.close();
+    }
 }
 
-std::string get_line(int index, const std::string& data) {
-    std::istringstream iss(data);
-    std::string line;
+inline std::string srs::i_file::load() {
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return buffer.str();
+}
 
-    for (int i = 0; i <= index; ++i) {
-        if (!std::getline(iss, line))
-            throw std::runtime_error("line index out of range");
+inline std::vector<char> srs::i_file::load_binary() {
+    ifs.seekg(0, std::ios::end);
+    std::streamsize size = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+
+    std::vector<char> buffer(size);
+    ifs.read(buffer.data(), size);
+    return buffer;
+}
+
+inline bool srs::i_file::is_open() const {
+    return ifs.is_open();
+}
+
+inline std::string srs::i_file::get_path() const {
+    return path;
+}
+
+inline void srs::i_file::seek(std::streampos pos) {
+    ifs.seekg(pos);
+}
+
+// ------------------------ srs::file 関数
+
+inline bool srs::file::write(const std::string& path, const std::string& data, std::ios::openmode mode) {
+    std::ofstream ofs;
+    open_ofs(ofs, path, mode);
+    ofs << data;
+    return true;
+}
+
+inline std::string srs::file::load(const std::string& path, std::ios::openmode mode) {
+    std::ifstream ifs;
+    open_ifs(ifs, path, mode);
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return buffer.str();
+}
+
+inline bool srs::file::write_binary(const std::string& path, const std::vector<char>& data, std::ios::openmode mode) {
+    std::ofstream ofs;
+    open_ofs(ofs, path, mode | std::ios::binary);
+    ofs.write(data.data(), data.size());
+    return true;
+}
+
+inline std::vector<char> srs::file::load_binary(const std::string& path, std::ios::openmode mode) {
+    std::ifstream ifs;
+    open_ifs(ifs, path, mode | std::ios::binary);
+    ifs.seekg(0, std::ios::end);
+    std::streamsize size = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+
+    std::vector<char> buffer(size);
+    ifs.read(buffer.data(), size);
+    return buffer;
+}
+
+inline std::uintmax_t srs::file::size(const std::string& path) {
+    if (!exists(path)) {
+        return 0;
     }
+    return std::filesystem::file_size(path);
+}
 
-    return line;
+inline bool srs::file::exists(const std::string& path) {
+    return std::filesystem::exists(path);
+}
+
+inline std::string srs::file::filename(const std::string& path) {
+    return std::filesystem::path(path).filename().string();
+}
+
+inline std::string srs::file::directory(const std::string& path) {
+    return std::filesystem::path(path).parent_path().string();
+}
+
+inline void srs::file::open_ofs(std::ofstream& ofs, const std::string& path, std::ios::openmode mode) {
+    ofs.open(path, mode);
+    if (!ofs.is_open()) {
+        throw std::runtime_error("srs::file::open_ofs " + path + " can't open");
+    }
+}
+
+inline void srs::file::open_ifs(std::ifstream& ifs, const std::string& path, std::ios::openmode mode) {
+    ifs.open(path, mode);
+    if (!ifs.is_open()) {
+        throw std::runtime_error("srs::file::open_ifs " + path + " can't open");
+    }
 }
