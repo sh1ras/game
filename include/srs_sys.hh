@@ -1,18 +1,26 @@
-#pragma
+#pragma once
 
-#include <iostream>
 #include <filesystem>
+#include <string>
+
+#ifndef SCOPE
+    #define SCOPE __PRETTY_FUNCTION__
+#endif
+
 
 namespace srs {
-    [[maybe_unused]]
-    inline std::string static_working_directory() {
-        static std::string dir = std::filesystem::current_path().string();
-        return dir;
-    }
+    inline constexpr bool error = 1;
+    inline constexpr bool pass = 0;
     
-    [[maybe_unused]]
-    inline std::string working_directory() {
-        std::string dir = std::filesystem::current_path().string();
-        return dir;
+    namespace sys {
+        /* wd = working directory */
+        inline const std::string& startup_wd() {
+            static const std::string dir = std::filesystem::current_path().string();
+            return dir;
+        }
+        /* wd = working directory */
+        inline std::string now_wd() {
+            return std::filesystem::current_path().string();
+        }
     }
 }

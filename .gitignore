@@ -1,0 +1,14 @@
+# バイナリ・オブジェクト
+*.o
+*.out
+*.exe
+*.elf
+
+# ビルドディレクトリ
+build/
+bin/
+obj/
+
+# エディタ・IDE設定
+.vscode/
+.idea/

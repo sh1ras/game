@@ -1,0 +1,33 @@
+# コンパイラとフラグ
+cxx = g++
+cxxflags = -std=c++20 -O3 -Iinclude
+
+# ディレクトリ
+obj_dir = object
+src_dir = source
+build_dir = build
+
+# 実行ファイル名
+name0 = main
+name1 = test
+
+
+# ルール定義
+rule cxx
+  command = $cxx $cxxflags -c $in -o $out
+  description = CXX $out
+
+rule link
+  command = $cxx $cxxflags $in -o $out
+  description = LINK $out
+
+# オブジェクトファイル（main.cc以外をすべてコンパイル）
+build $obj_dir/number_16.o: cxx $src_dir/number_16.cc
+build $obj_dir/character.o: cxx $src_dir/character.cc
+# build $obj_dir/another.o: cxx $src_dir/another.cc
+
+# 実行ファイル（main.cc とライブラリオブジェクトをリンク）
+build $build_dir/$name1: link $obj_dir/number_16.o $obj_dir/character.o $name0.cc
+
+# デフォルトターゲット
+default $build_dir/$name1

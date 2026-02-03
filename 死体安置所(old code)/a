@@ -1,0 +1,25 @@
+bool debuff_atk(srs::number_16& atk, srs::number_16 bese_atk, const double& effect_size, size_t  = 0) {
+    srs::number_16 result(((bese_atk * atk) * (bese_atk * atk)) * effect_size);
+    if(atk == result) {
+        return debuff_atk(bese_atk + atk, bese_atk, effect_size);
+    } else {
+        atk = atk - result;
+    }
+/*     if(bese_atk > 0) {
+        atk = atk - percent;
+    } else {
+        srs::bit::set_positive(atk.to_int16_t());
+        atk = atk + percent;
+        srs::bit::set_negative(atk.to_int16_t());
+    } */
+    return 1;
+}
+
+std::string a(const std::string& a, const std::string& b) {
+    return a + b;
+}
+
+void atk_buff(srs::number_16& atk, const double& effect_size) {
+    atk = (atk * effect_size) + atk;
+    return;
+}

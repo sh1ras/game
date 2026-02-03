@@ -1,54 +1,43 @@
 #include "../include/time.hh"
 
-srs::__clock srs::clock;
+#include <chrono>
+#include <stdexcept>
 
-srs::timer::timer(srs::time_unit t) : __start_time(0), __finish_time(0), __time_unit(t) {}
+const srs::clock srs::mono_clock;
+
+srs::timer::timer(srs::time_unit t)
+    : __start_time(0), __finish_time(0) {}
 
 srs::timer::~timer() {}
 
-void srs::timer::set_time_unit(srs::time_unit t) {
-    __time_unit = t;
-}
-
 void srs::timer::start() {
-    if(__time_unit == srs::time_unit::ns) {
-        __start_time = srs::clock.now_ns();
-    } else if (__time_unit == srs::time_unit::ms) {
-        __start_time = srs::clock.now_ms();
-    } else if (__time_unit == srs::time_unit::s) {
-        __start_time = srs::clock.now_s();
-    }
+    __start_time = srs::mono_clock.now_ns();
 }
 
 void srs::timer::finish() {
-    if(__time_unit == srs::time_unit::ns) {
-        __finish_time = srs::clock.now_ns();
-    } else if (__time_unit == srs::time_unit::ms) {
-        __finish_time = srs::clock.now_ms();
-    } else if (__time_unit == srs::time_unit::s) {
-        __finish_time = srs::clock.now_s();
-    }
+    __finish_time = srs::mono_clock.now_ns();
 }
 
-int64_t srs::timer::dt() {
-    if(__finish_time < __start_time || __start_time == 0 || __finish_time == 0) {
+int64_t srs::timer::dt_ns() {
+    if (__finish_time < __start_time || __start_time == 0 || __finish_time == 0) {
         throw std::runtime_error("srs::timer::dt abnormal time detected");
     }
     return __finish_time - __start_time;
 }
 
-int64_t srs::timer::dt_a() {
-    if(__finish_time < __start_time || __start_time == 0 || __finish_time == 0) {
-        throw std::runtime_error("srs::timer::dt_a abnormal time detected");
-    }
-    return __finish_time - __start_time - 30;
+int64_t srs::timer::dt_ms() {
+    return dt_ns() / ns_ms;
 }
 
-int64_t srs::timer::start_time() {
+int64_t srs::timer::dt_s() {
+    return dt_ns() / ns_s;
+}
+
+int64_t srs::timer::start_ns() {
     return __start_time;
 }
 
-int64_t srs::timer::finish_time() {
+int64_t srs::timer::finish_ns() {
     return __finish_time;
 }
 
@@ -57,40 +46,30 @@ void srs::timer::init() {
     __finish_time = 0;
 }
 
-std::chrono::milliseconds srs::__clock::ms(const int64_t& s) {
-    return std::chrono::milliseconds(s);
-}
+/* __clock */
 
-std::chrono::seconds srs::__clock::s(const int64_t& s) {
-    return std::chrono::seconds(s);
-}
+srs::clock::clock() : __creation_time_ms(now_ms()) {}
 
-std::chrono::minutes srs::__clock::min(const int64_t& s) {
-    return std::chrono::minutes(s);
-}
+srs::clock::~clock() {}
 
-std::chrono::hours srs::__clock::h(const int64_t& s) {
-    return std::chrono::hours(s);
-}
-
-int64_t srs::__clock::now_ns() {
+int64_t srs::clock::now_ns() const {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::steady_clock::now().time_since_epoch()
     ).count();
 }
 
-int64_t srs::__clock::now_ms() {
+int64_t srs::clock::now_ms() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()
     ).count();
 }
 
-int64_t srs::__clock::now_s() {
+int64_t srs::clock::now_s() const {
     return std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::steady_clock::now().time_since_epoch()
     ).count();
 }
 
-int64_t srs::__clock::start_ms() {
-    return __creation_time_ms - now_ms();
+int64_t srs::clock::start_ms() const {
+    return now_ms() - __creation_time_ms;
 }

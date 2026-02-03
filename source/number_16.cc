@@ -17,7 +17,7 @@ srs::number_16::number_16(const srs::number_16& me)
 
 srs::number_16::~number_16() {}
 
-srs::number_16 srs::number_16::operator++(int) {
+inline srs::number_16 srs::number_16::operator++(int) {
     number_16 tmp = *this;
     if(__is_allow_overflow) 
         __num++;
@@ -30,7 +30,7 @@ srs::number_16 srs::number_16::operator++(int) {
     return tmp;
 }
 
-srs::number_16 srs::number_16::operator--(int) {
+inline srs::number_16 srs::number_16::operator--(int) {
     number_16 tmp = *this;
     if(__is_allow_overflow) 
         __num--;
@@ -43,24 +43,24 @@ srs::number_16 srs::number_16::operator--(int) {
     return tmp;
 }
 
-srs::number_16& srs::number_16::operator=(int16_t num) {
+inline srs::number_16& srs::number_16::operator=(int16_t num) {
     __num = num;
     return *this;
 }
-srs::number_16& srs::number_16::operator+=(const number_16& other) {
+inline srs::number_16& srs::number_16::operator+=(const number_16& other) {
     return (*this) += other.to_int16_t();
 }
 
-srs::number_16& srs::number_16::operator-=(const number_16& other) {
+inline srs::number_16& srs::number_16::operator-=(const number_16& other) {
     return (*this) -= other.to_int16_t();
 }
 
-void srs::number_16::range(int16_t min, int16_t max) {
+inline void srs::number_16::range(int16_t min, int16_t max) {
     __min = min;
     __max = max;
 }
 
-void srs::number_16::overflow(bool is_allow_overflow) {
+inline void srs::number_16::overflow(bool is_allow_overflow) {
     __is_allow_overflow = is_allow_overflow;
     return;
 }
